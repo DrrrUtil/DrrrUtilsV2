@@ -13,6 +13,7 @@ let loadedModules = [];
 let commands = [];
 
 
+
 /************************************
  *
  *
@@ -25,7 +26,6 @@ let blacklist = {
     name: 'blacklist',
     type: 'data',
     storage: [],
-    storageKey: 'blacklistedUsers',
     run: async function ({
         roomData
     }) {
@@ -43,7 +43,6 @@ let whitelist = {
     name: 'whitelist',
     type: 'data',
     storage: [],
-    storageKey: 'whitelistedUsers',
     run: async function ({
         roomData
     }) {
@@ -60,7 +59,6 @@ let notifyUser = {
     name: 'notifyUser',
     type: 'data',
     storage: [],
-    storageKey: 'notifyUsers',
     run: async function ({
         loungeData
     }) {
@@ -92,14 +90,12 @@ let mute = {
     name: 'mute',
     type: 'message',
     storage: [],
-    storageKey: 'mutedUsers',
     run: async function (talks) {
         for (const message of talks) {
             if (message.type === 'message') {
                 if (this.storage.includes(message.from.name)) {
                     setTimeout(async () => {
                         let htmlMessage = document.getElementById(`${message.id}`);
-                        console.log(htmlMessage);
                         htmlMessage.parentNode.removeChild(htmlMessage);
                     }, 100);
                 }
@@ -187,6 +183,7 @@ while (true) {
     update = room.update;
 }
 
+
 /************************************
  *
  *
@@ -197,43 +194,60 @@ while (true) {
 
 //Loads data from the local storage
 async function loadData() {
-    for (module of modules) {
-        if (module.storage !== undefined)
-            module.storage = JSON.parse(localStorage.getItem(module.storageKey));
+    let data = JSON.parse(localStorage.getItem('DrrrUtils'));
+    if (data) {
+        for (module of modules) {
+            if (module.storage !== undefined) {
+                if (data[module.name] !== undefined) {
+                    module.storage = data[module.name];
+                } else {
+                    module.storage = [];
+                }
+            }
+        }
     }
 }
 
 //Adds data to local storage, to a certain key element.
-async function addData(key, value) {
-    let data = JSON.parse(localStorage.getItem(key));
-    console.log(data);
-    if (data) {
-        data.push(value);
-        localStorage.setItem(key, JSON.stringify(data));
-    } else {
-        localStorage.setItem(key, JSON.stringify([value]));
+async function addData(module, value) {
+    if (module.storage) {
+        let data = JSON.parse(localStorage.getItem('DrrrUtils'));
+        if (data) {
+            if (data[module.name]) {
+                data[module.name].push(value);
+                localStorage.setItem('DrrrUtils', JSON.stringify(data));
+            } else {
+                data[module.name] = [value];
+                localStorage.setItem('DrrrUtils', JSON.stringify(data));
+            }
+        } else {
+            let drrrUtils = {};
+            drrrUtils[module.name] = [value];
+            localStorage.setItem('DrrrUtils', JSON.stringify(drrrUtils));
+        }
+        loadData();
     }
-    loadData();
 }
 
 //Removes data from the local storage, from a certain key element.
-async function removeData(key, value) {
-    let data = JSON.parse(localStorage.getItem(key));
-    const index = data.indexOf(value);
-    if (index > -1) {
-        data.splice(index, 1);
-        localStorage.setItem(key, JSON.stringify(data));
-
+async function removeData(module, value) {
+    let data = JSON.parse(localStorage.getItem('DrrrUtils'));
+    if (data) {
+        if (data[module.name]) {
+            const index = data[module.name].indexOf(value);
+            if (index > -1) {
+                data[module.name].splice(index, 1);
+                localStorage.setItem('DrrrUtils', JSON.stringify(data));
+            }
+            loadData();
+        }
     }
+}
+
+async function emptyData() {
+    localStorage.removeItem('DrrrUtils');
     loadData();
 }
-
-async function emptyData(key)
-{
-    localStorage.setItem(key, null);
-    loadData(); 
-}
-
 
 /************************************
  *
@@ -316,3 +330,16 @@ async function changeRoomDescription(description) {
 async function forceNightMode() {
     document.body.classList.add('game-room--night');
 }
+
+
+/************************************
+ *
+ *
+ * FRONT END
+ *
+ *
+ ************************************/
+
+
+
+
