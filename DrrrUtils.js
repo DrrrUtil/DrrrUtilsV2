@@ -1,10 +1,10 @@
 let update = 0;
 let prefix = '!';
 /*
-There are two types of modules: 
+There are two types of modules:
 1: Modules that are dependent on room data, such as the users in a room, the room title, room description, lounge data etc. (modules)
 2: Modules that are dependent on the newest messages in a room. (messageModules)
-That is why I have to differentiate between message flow dependent modules and data dependent modules. 
+That is why I have to differentiate between message flow dependent modules and data dependent modules.
 They simply get their data in different places.
 The data dependent modules are handled in the Main Loop, message dependent modules in the message loop.
 Maybe I will find a better way of handling this situation later, if you have any recommendations, feel free to tell me about it!
@@ -167,22 +167,23 @@ setInterval(async () => {
 }, 5000);
 
 //Message Loop
-while (true) {
-    //Retrieving the newest messages of the current room
-    let room = await fetchNewMessages();
-    if (room.talks && update > 0) {
+async function main(){
+    while (true) {
+        //Retrieving the newest messages of the current room
+        let room = await fetchNewMessages();
+        if (room.talks && update > 0) {
 
-        //Handling message flow dependent modules 
-        for (const module of loadedModules) {
-            if (module.type === 'message') {
-                module.run(room.talks);
+            //Handling message flow dependent modules
+            for (const module of loadedModules) {
+                if (module.type === 'message') {
+                    module.run(room.talks);
+                }
+
             }
-
         }
+        update = room.update;
     }
-    update = room.update;
 }
-
 
 /************************************
  *
@@ -259,7 +260,7 @@ async function emptyData() {
 
 /*
 Fetches a certain API endpoint depending on what path you choose.
-Possible paths for drrr.com would be: room, lounge or an empty path. 
+Possible paths for drrr.com would be: room, lounge or an empty path.
 The function returns the result of the fetch operation in json format.
 */
 async function loadModule(module) {
@@ -340,6 +341,150 @@ async function forceNightMode() {
  *
  ************************************/
 
+i18n = {
+    zh: { utilSetting: '插件設定'
+        , moduleName: '模組名稱'
+        , moduleSave: '儲存'
+        , moduleConfig: '模組設定'
+        , removeEntry: '移除條目'
+        , newEntry: '新增條目'
+    },
+    en: { utilSetting: 'Utility Setting'
+        , moduleName: 'Module Name'
+        , moduleSave: 'Save'
+        , moduleConfig: 'Module Config'
+        , removeEntry: '-'
+        , newEntry: '+'
+    }
+}
 
+function plugCSS(){
+    const css = `
+  <style>
+    #form-settings-util-module-config {
+      border-right-width: 2px;
+      background: rgba(255,255,255,.1);
+      color: #fff;
+      border-width: 2px;
+    }
+  </style>`
+    $('head').append(css);
+}
 
+function plugSettingUI(){
+    const lang = ['zh-TW', 'zh-CN'].includes($('html').attr('lang')) ? i18n.zh : i18n.en;
 
+    const moduleOptions = modules.map(m => `<option class="modal-content">${m.name}</option>`).join('');
+
+    const tabIndex = `<li role="presentation" id="settings-util-tab" class="">
+      <a href="#settings-util" aria-controls="settings-util" role="tab" data-toggle="tab" aria-expanded="false">${lang.utilSetting}</a>
+  </li>`;
+
+    const entry = val => `
+  <div class="input-group">
+    <input class="form-control" value="${val}" disabled/>
+    <span class="input-group-btn">
+      <button class="btn btn-default form-settings-util-entry-remove" type="button">${lang.removeEntry}</button>
+    </span>
+  </div>`
+
+    const tabContent = `<div role="tabpanel" class="tab-pane" id="settings-util">
+              <p></p>
+              <div class="form-group" id="settings-util-name">
+                <label for="form-settings-util-name">${lang.moduleName}</label>
+                <div class="input-group">
+
+                  <select class="form-control" id="form-settings-util-module-name" name="util_name">
+                      ${moduleOptions}
+                  </select>
+
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="button" id="form-settings-util-module-save">${lang.moduleSave}</button>
+                  </span>
+
+                </div>
+              </div>
+              <div class="form-group" id="settings-util-config">
+
+                <label for="form-settings-util-config">${lang.moduleConfig}</label>
+
+                <!-- textarea style -->
+                <textarea rows="10" type="text" class="form-control module-content"
+                id="form-settings-util-module-textarea" placeholder="config here"></textarea>
+
+                <!-- entry style -->
+                <div id="form-settings-util-module-entries">
+                  <div id="module-entries">
+                  </div>
+                  <div class="input-group">
+                    <input class="form-control" placeholder="new entry"/>
+                    <span class="input-group-btn">
+                      <button class="btn btn-default form-settings-util-entry-new" type="button">${lang.newEntry}</button>
+                    </span>
+                  </div>
+                </div>
+              </div>
+  </div>`;
+    $('#modal-settings').find('ul').append(tabIndex);
+    $('.tab-content').append(tabContent);
+
+    const getModule = () => modules[$('#form-settings-util-module-name').prop('selectedIndex')]
+
+    $('#form-settings-util-module-name').on('change', function(){
+        $('#form-settings-util-module-textarea').hide();
+        $('#form-settings-util-module-entries').hide();
+        let currentModule = getModule();
+        if(currentModule.storage instanceof Array){
+            $('#module-entries').empty();
+            for(e of currentModule.storage){
+                $('#module-entries').append(entry(String(e)));
+            }
+            $('.form-settings-util-entry-remove').click(function(){
+                let val = $(this).parent().parent().find('input').val();
+                removeData(getModule(), val);
+                $('#form-settings-util-module-name').change();
+            })
+            $('#form-settings-util-module-entries').show();
+        }
+        else{
+            $('#form-settings-util-module-textarea').val(JSON.stringify(currentModule.storage))
+            $('#form-settings-util-module-textarea').show();
+        }
+    }).change();
+
+    $('.form-settings-util-entry-new').click(function(){
+        let input = $(this).parent().parent().find('input');
+        let val = input.val();
+        input.val('');
+        if(val.trim().length){
+            addData(getModule(), val.trim());
+            $('#form-settings-util-module-name').change();
+        }
+        else
+            $('head').append('<script>swal("Empty Entry")</script>');
+    })
+
+    $('#form-settings-util-module-save').on('click', function(){
+        $('head').append(`<script>swal("save button for textarea, but seems like we don't need it")</script>`);
+        // text area on save
+        /*
+    try{
+      config = $('#form-settings-util-module-config').val()
+      if(config.trim().length)
+        config = JSON.parse(config)
+      else
+        config = undefined;
+      modules[$('#form-settings-util-module-name').prop('selectedIndex')].storage = config
+      $('head').append('<script>swal("done")</script>');
+    }
+    catch(err){ alert(err); }
+    */
+    })
+}
+
+$(document).ready(function(){
+    plugCSS();
+    plugSettingUI();
+    main(); // await is not permit in non-async function in some browser
+    // but chrome console is allowed
+})
