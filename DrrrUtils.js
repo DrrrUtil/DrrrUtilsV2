@@ -2,6 +2,10 @@ let update = 0;
 let prefix = '!';
 let dmTarget = '';
 let oocBrackets = '))';
+
+// A global room object, yes some functions need a global room object, sadly.. :[ I know I suck at coding.
+let globalRoom;
+
 /*
 There are two types of modules: 
 1: Modules that are dependent on room data, such as the users in a room, the room title, room description, lounge data etc. (modules)
@@ -11,8 +15,10 @@ They simply get their data in different places.
 The data dependent modules are handled in the Main Loop, message dependent modules in the message loop.
 Maybe I will find a better way of handling this situation later, if you have any recommendations, feel free to tell me about it!
 */
+
+let modules;
 let loadedModules = [];
-let commands = [];
+let commands;
 
 // Hook outcoming requests
 
@@ -22,7 +28,7 @@ window.XMLHttpRequest.prototype.send = function (body) {
 
     if (body && body.includes('message')) {
         const parts = body.split('&');
-    
+
         parts[2] = dmLock ? parts[2] + dmTarget : parts[2];
         parts[0] = oocBracketsLock ? parts[0] + ' ' + oocBrackets : parts[0];
 
@@ -44,7 +50,7 @@ window.XMLHttpRequest.prototype.send = function (body) {
 
 let dmLock = false;
 
-let oocBracketsLock = true;
+let oocBracketsLock = false;
 
 let blacklist = {
     name: 'blacklist',
@@ -117,11 +123,13 @@ let mute = {
     run: async function (talks) {
         for (const message of talks) {
             if (message.type === 'message') {
-                if (this.storage.includes(message.from.name)) {
-                    setTimeout(async () => {
-                        let htmlMessage = document.getElementById(`${message.id}`);
-                        htmlMessage.parentNode.removeChild(htmlMessage);
-                    }, 100);
+                if (message.message) {
+                    if (this.storage.includes(message.from.name)) {
+                        setTimeout(async () => {
+                            let htmlMessage = document.getElementById(`${message.id}`);
+                            htmlMessage.parentNode.removeChild(htmlMessage);
+                        }, 100);
+                    }
                 }
             }
         }
@@ -144,25 +152,110 @@ let greetUser = {
 let commandHandler = {
     name: 'commandHandler',
     type: 'message',
-    storage: undefined,
+    storage: [],
     run: async function (talks) {
         for (const message of talks) {
-            if (message.message === '!ping') {
-                await sendMessage('pong!');
+            if (message.message && message.from) {
+                if (message.from.tripcode) {
+                    if (message.message.startsWith(prefix) && message.from.name !== globalRoom.profile.name && this.storage.includes(message.from.tripcode)) {
+                        const [cmd, ...args] = message.message.slice(prefix.length).trim().split(/ +/g);
+                        const command = commands.filter(command => command.name === cmd.toLowerCase())[0];
+                        if (command) {
+                            command.run(message, args);
+                        }
+                    }
+                }
             }
         }
 
     }
 };
 
-
-
 /*
 For some reason has to be down here, otherwise it cries, saying "blacklist is not defined mimimi"
 */
-let modules = [blacklist, whitelist, notifyUser, dmCounter, mute, commandHandler, greetUser];
+modules = [blacklist, whitelist, notifyUser, dmCounter, mute, commandHandler, greetUser];
 
 loadData();
+
+/************************************
+ *
+ *
+ * Commands
+ *
+ *
+ ************************************/
+
+let kick = {
+    name: 'kick',
+    run: async function (...args) {
+        for (target of args[1]) {
+            let user = await findUser(target, globalRoom.room.users);
+            if (user) {
+                await kickUser(await findUser(target, globalRoom.room.users));
+            } else {
+                await sendMessage(`User ${target} was not found.`);
+            }
+        }
+    }
+}
+
+let ban = {
+    name: 'ban',
+    run: async function (...args) {
+        for (target of args[1]) {
+            let user = await findUser(target, globalRoom.room.users);
+            if (user) {
+                await banUser();
+            } else {
+                await sendMessage(`User ${target} was not found.`);
+            }
+        }
+    }
+}
+
+let say = {
+    name: 'say',
+    run: async function (...args) {
+        await sendMessage(args[1].join(' '));
+    }
+}
+
+let setRoomTitle = {
+    name: 'setroomtitle',
+    run: async function (...args) {
+        await changeRoomTitle(args[1].join(' '));
+    }
+}
+
+let setRoomDescription = {
+    name: 'setroomdescription',
+    run: async function (...args) {
+        await changeRoomDescription(args[1].join(' '));
+    }
+}
+
+let setDJMode = {
+    name: 'setdjmode',
+    run: async function (...args) {
+        await setDJMode(args[1]);
+    }
+}
+
+let giveHost = {
+    name: 'givehost',
+    run: async function (...args) {
+        let user = await findUser(args[1].join(' '), globalRoom.room.users);
+            if (user) {
+                await changeHost(user);
+            } else {
+                await sendMessage(`User ${args[1]} was not found.`);
+            }
+    }
+}
+
+commands = [kick, ban, say, setRoomTitle, setRoomDescription, setDJMode, giveHost];
+
 
 
 /************************************
@@ -181,6 +274,9 @@ setInterval(async () => {
         roomData: await fetchAPI('room'),
         loungeData: await fetchAPI('lounge')
     }
+
+    //Populating the global room object
+    globalRoom = data.roomData;
 
     //Handling data dependent modules
     for (const module of loadedModules) {
@@ -352,10 +448,21 @@ async function changeRoomDescription(description) {
     return await postAPI('room', ['room_description', description]);
 }
 
+async function changeDJMode(state) {
+    return await postAPI('room', ['dj_mode', state]);
+}
+
+async function changeHost(user) {
+    return await postAPI('room', ['new_host', user.id]);
+}
+
 async function forceNightMode() {
     document.body.classList.add('game-room--night');
 }
 
+async function populateRoomData(room) {
+
+}
 
 /************************************
  *
