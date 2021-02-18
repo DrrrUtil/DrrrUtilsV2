@@ -1,5 +1,7 @@
 let update = 0;
 let prefix = '!';
+let dmTarget = '';
+let oocBrackets = '))';
 /*
 There are two types of modules: 
 1: Modules that are dependent on room data, such as the users in a room, the room title, room description, lounge data etc. (modules)
@@ -12,6 +14,23 @@ Maybe I will find a better way of handling this situation later, if you have any
 let loadedModules = [];
 let commands = [];
 
+// Hook outcoming requests
+
+let _send = window.XMLHttpRequest.prototype.send;
+
+window.XMLHttpRequest.prototype.send = function (body) {
+
+    if (body && body.includes('message')) {
+        const parts = body.split('&');
+    
+        parts[2] = dmLock ? parts[2] + dmTarget : parts[2];
+        parts[0] = oocBracketsLock ? parts[0] + ' ' + oocBrackets : parts[0];
+
+        body = parts.join('&');
+    }
+
+    return _send.call(this, body);
+}
 
 
 /************************************
@@ -21,6 +40,11 @@ let commands = [];
  *
  *
  ************************************/
+
+
+let dmLock = false;
+
+let oocBracketsLock = true;
 
 let blacklist = {
     name: 'blacklist',
@@ -122,7 +146,6 @@ let commandHandler = {
     type: 'message',
     storage: undefined,
     run: async function (talks) {
-
         for (const message of talks) {
             if (message.message === '!ping') {
                 await sendMessage('pong!');
@@ -131,6 +154,8 @@ let commandHandler = {
 
     }
 };
+
+
 
 /*
 For some reason has to be down here, otherwise it cries, saying "blacklist is not defined mimimi"
@@ -339,7 +364,3 @@ async function forceNightMode() {
  *
  *
  ************************************/
-
-
-
-
