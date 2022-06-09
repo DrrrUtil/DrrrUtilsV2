@@ -21,14 +21,14 @@
   let globalRoom;
 
   /*
-    There are two types of modules:
-    1: Modules that are dependent on room data, such as the users in a room, the room title, room description, lounge data etc. (modules)
-    2: Modules that are dependent on the newest messages in a room. (messageModules)
-    That is why I have to differentiate between message flow dependent modules and data dependent modules.
-    They simply get their data in different places.
-    The data dependent modules are handled in the Main Loop, message dependent modules in the message loop.
-    Maybe I will find a better way of handling this situation later, if you have any recommendations, feel free to tell me about it!
-    */
+  There are two types of modules:
+  1: Modules that are dependent on room data, such as the users in a room, the room title, room description, lounge data etc. (modules)
+  2: Modules that are dependent on the newest messages in a room. (messageModules)
+  That is why I have to differentiate between message flow dependent modules and data dependent modules.
+  They simply get their data in different places.
+  The data dependent modules are handled in the Main Loop, message dependent modules in the message loop.
+  Maybe I will find a better way of handling this situation later, if you have any recommendations, feel free to tell me about it!
+  */
 
   let modules;
   let loadedModules = [];
@@ -180,6 +180,7 @@
             ) {
               const [cmd, ...args] = message.message.slice(prefix.length).trim().split(/ +/g);
               const command = commands.filter((command) => command.name === cmd.toLowerCase())[0];
+
               if (command) {
                 command.run(message, args);
               }
@@ -191,8 +192,8 @@
   };
 
   /*
-    For some reason has to be down here, otherwise it cries, saying "blacklist is not defined mimimi"
-    */
+  For some reason has to be down here, otherwise it cries, saying "blacklist is not defined mimimi"
+  */
   modules = [blacklist, whitelist, notifyUser, dmCounter, mute, commandHandler, greetUser];
 
   loadData();
@@ -217,13 +218,13 @@
   let kick = {
     name: 'kick',
     run: async function (...args) {
-      for (const target of args[1]) {
-        let user = await findUser(target, globalRoom.room.users);
-        if (user) {
-          await kickUser(await findUser(target, globalRoom.room.users));
-        } else {
-          await sendMessage(`User ${target} was not found.`);
-        }
+      const targetName = args[0].message.substr('kick'.length + 1).trim();
+
+      let user = await findUser(targetName, globalRoom.room.users);
+      if (user) {
+        await kickUser(await findUser(targetName, globalRoom.room.users));
+      } else {
+        await sendMessage(`User ${targetName} was not found.`);
       }
     },
   };
@@ -231,13 +232,13 @@
   let ban = {
     name: 'ban',
     run: async function (...args) {
-      for (const target of args[1]) {
-        let user = await findUser(target, globalRoom.room.users);
-        if (user) {
-          await banUser(await findUser(target, globalRoom.room.users));
-        } else {
-          await sendMessage(`User ${target} was not found.`);
-        }
+      const targetName = args[0].message.substr('ban'.length + 1).trim();
+
+      let user = await findUser(targetName, globalRoom.room.users);
+      if (user) {
+        await banUser(await findUser(targetName, globalRoom.room.users));
+      } else {
+        await sendMessage(`User ${targetName} was not found.`);
       }
     },
   };
@@ -402,10 +403,10 @@
    ************************************/
 
   /*
-    Fetches a certain API endpoint depending on what path you choose.
-    Possible paths for drrr.com would be: room, lounge or an empty path.
-    The function returns the result of the fetch operation in json format.
-    */
+  Fetches a certain API endpoint depending on what path you choose.
+  Possible paths for drrr.com would be: room, lounge or an empty path.
+  The function returns the result of the fetch operation in json format.
+  */
   async function loadModule(module) {
     //console.log(`Loading module ${module.name}`);
     loadedModules.push(module);
@@ -493,86 +494,86 @@
 
   async function createModuleHTML(module) {
     return `<div class="module">
-    <div class="item-wrapper">
-         <h4>${module.name}</h4>
-         <button class="button" id="button-${module.storageKey}">🔧</button>
-    </div>
-  </div>`;
+  <div class="item-wrapper">
+       <h4>${module.name}</h4>
+       <button class="button" id="button-${module.storageKey}">🔧</button>
+  </div>
+</div>`;
   }
 
   async function createComplexModuleHTML(module) {
     return `<div class="module-container draggable" id="${module.storageKey}-container">
-        <div id="module-header">
-            <h3>
-                ${module.name}
-            </h3>
-            <label class="toggle" id= "toggle-${module.storageKey}" for="myToggle-${module.storageKey}">
-                <input class="toggle__input" name="" type="checkbox" id="myToggle-${module.storageKey}" style="display: none;">
-                <div class="toggle__fill"></div>
-            </label>
-        </div>
-        <div class="flex">
-            <div class="item">
-                <div class="item-wrapper">
-                    <p>Add User:</p>
-                </div>
-                <div class="item-wrapper">
-                    <textarea class="module-input" name="${module.storageKey}" id="${module.storageKey}-input" rows="1" cols=16 style="width: 70%;"></textarea>
-                    <button class="module-button" id="${module.storageKey}-add">ADD</button>
-                </div>
-            </div>
-            <div class="item">
-                <div class="item-wrapper">
-                    <div>
-                        <p>${module.name}-Users:</p>
-                    </div>
-                </div>
-                <div class="item-wrapper">
-                    <div id="textbox">
-                        <span class="TagsInput-selected" id="TagsInput-selected-${module.storageKey}">
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>`;
+      <div id="module-header">
+          <h3>
+              ${module.name}
+          </h3>
+          <label class="toggle" id= "toggle-${module.storageKey}" for="myToggle-${module.storageKey}">
+              <input class="toggle__input" name="" type="checkbox" id="myToggle-${module.storageKey}" style="display: none;">
+              <div class="toggle__fill"></div>
+          </label>
+      </div>
+      <div class="flex">
+          <div class="item">
+              <div class="item-wrapper">
+                  <p>Add User:</p>
+              </div>
+              <div class="item-wrapper">
+                  <textarea class="module-input" name="${module.storageKey}" id="${module.storageKey}-input" rows="1" cols=16 style="width: 70%;"></textarea>
+                  <button class="module-button" id="${module.storageKey}-add">ADD</button>
+              </div>
+          </div>
+          <div class="item">
+              <div class="item-wrapper">
+                  <div>
+                      <p>${module.name}-Users:</p>
+                  </div>
+              </div>
+              <div class="item-wrapper">
+                  <div id="textbox">
+                      <span class="TagsInput-selected" id="TagsInput-selected-${module.storageKey}">
+                      </span>
+                  </div>
+              </div>
+          </div>
+      </div>`;
   }
 
   async function createSimpleModuleHTML(module) {
     return `<div class="module-container draggable" id="${module.storageKey}-container">
-        <div id="module-header-simple">
-            <h3>
-                ${module.name}
-            </h3>
-            <label class="toggle" id= "toggle-${module.storageKey}" for="myToggle-${module.storageKey}">
-                <input class="toggle__input" name="" type="checkbox" id="myToggle-${module.storageKey}" style="display: none;">
-                <div class="toggle__fill"></div>
-            </label>
-        </div>
-        </div>`;
+      <div id="module-header-simple">
+          <h3>
+              ${module.name}
+          </h3>
+          <label class="toggle" id= "toggle-${module.storageKey}" for="myToggle-${module.storageKey}">
+              <input class="toggle__input" name="" type="checkbox" id="myToggle-${module.storageKey}" style="display: none;">
+              <div class="toggle__fill"></div>
+          </label>
+      </div>
+      </div>`;
   }
 
   async function createUsernameTag(username) {
     return ` <span class="TagsInput-tag">
-                <span class="TagLabel colored">
-                    <span class="TagLabel-text">
-                        ${username}
-                    </span>
-                </span>
-              </span>`;
+              <span class="TagLabel colored">
+                  <span class="TagLabel-text">
+                      ${username}
+                  </span>
+              </span>
+            </span>`;
   }
 
   async function buildHTML() {
     let moduleList = `<div class="container draggable">
-                            <div id="header">
-                                <h2>
-                                    Modules
-                                </h2>
-                            </div>
-                         <div class="modules">
- 
-                         </div>
-                        </div>
-                        `;
+                          <div id="header">
+                              <h2>
+                                  Modules
+                              </h2>
+                          </div>
+                       <div class="modules">
+
+                       </div>
+                      </div>
+                      `;
 
     $('#body').prepend(moduleList);
 
@@ -592,240 +593,240 @@
     }
 
     $('#body').prepend(`  <script>
-        $(function () {
-            $(".draggable").draggable();
-        });
-    </script>`);
+      $(function () {
+          $(".draggable").draggable();
+      });
+  </script>`);
   }
 
   async function appendCSS() {
     let moduleListCSS = `
-        <style>
-        .container {
-        background-color: rgb(57, 57, 62);
-        color: rgb(170, 170, 170);
-        border: 2px solid rgb(97, 97, 101);
-        border-radius: 12px;
-        width: 270px;
-        font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
-        z-index: 5000;
-        position: fixed;
- 
-    }
- 
-    .item {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-    }
- 
-    .item-wrapper {
-        width: 100%;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        margin-left: 2px;
-        margin-right: 1rem;
-    }
- 
-    .flex {
-        padding: 1rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    #header {
-        padding: 0 0 0 1rem;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        border-bottom: 1px solid rgb(97, 97, 101);
-    }
- 
-    .module {
-        padding: 0 0 0 1rem;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        border-top: 1px solid rgb(97, 97, 101);
-        height: 50px;
-    }
- 
-    .modules {
-        overflow-y: auto;
-        height: 300px;
-    }
- 
-    .button {
-        outline: none;
-        border: none;
-        font-size: x-large;
-        background-color: rgb(40, 40, 43);
-        border: 1px solid rgb(97, 97, 101);
-        border-radius: 12px;
- 
-    }
- 
-    .button:hover {
-        background-color: rgb(57, 57, 62);
-    }
- 
-    .button:active {
-        background-color: #ff6c69;
-    }
- 
- 
-    .module-container {
-        background-color: rgb(57, 57, 62);
-        color: rgb(170, 170, 170);
-        border: 1px solid rgb(97, 97, 101);
-        border-radius: 12px;
-        width: 200px;
-        font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
-        position:fixed;
-        z-index: 5000;
-        display:none;
-    }
- 
-    #module-header {
-        padding: 0 0 0 1rem;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        border-bottom: 1px solid rgb(97, 97, 101);
-    }
- 
- 
-    #module-header-simple {
-        padding: 0 0 0 1rem;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-    }
- 
-    .flex {
-        padding: 1rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
- 
-    .item {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-    }
- 
-    .item-wrapper {
-        width: 100%;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-    }
- 
-    #textbox {
-        display: flex;
-        flex-direction: row;
-        align-content: center;
-        flex-wrap: wrap;
-        width: 100%;
-        border: 1px solid rgb(97, 97, 101);
-        border-radius: 12px;
-        border-radius: 5px;
-        min-height : 40px;
-    }
- 
-    .module-button {
-        margin-left: 5px; border: 1px solid rgb(107, 107, 107);
-        border-radius: 5px;
-        color: rgb(150, 150, 150);
-        background-color: rgb(77, 77, 77);
-        outline: none;
-    }
- 
- 
-    .module-button:hover {
-        background-color: rgb(57, 57, 62);
-    }
- 
-    .module-button:active {
-        background-color: #ff6c69;
-    }
- 
- 
-    .TagLabel {
-        font-size: 85%;
-        font-weight: 600;
-        display: inline-block;
-        padding: .1em .5em;
-        margin: .2em .1em;
-        border-radius: 4px;
-        background: #212121;
-        font-size: 14px;
-        color: #1a1a1a;
-        background-color: #ff6c69;
-        text-transform: none;
-    }
- 
-    .TagLabel:hover {
-        background-color: #ff9491;
-    }
- 
-    .TagsInput-selected {
-       margin: 3px;
-    }
- 
-    .module-input {
-        background-color: rgb(57, 57, 62);
-        border: 1px solid rgb(107, 107, 107);
-        border-radius: 5px;
-        color: rgb(255, 255, 255);
-        resize: none;
-    }
- 
-    .toggle {
-        margin-left: 15px;
-        margin-top: 15px;
-        --width: 40px;
-        --height: calc(var(--width) / 2);
-        --border-radius: calc(var(--height) / 2);
- 
-        display: inline-block;
-        cursor: pointer;
-    }
- 
- 
-    .toggle__fill {
-        position: relative;
-        width: var(--width);
-        height: var(--height);
-        border-radius: var(--border-radius);
-        background: #ff6c69;
-        transition: background 0.2s;
-    }
- 
-    .toggle__fill::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: var(--height);
-        width: var(--height);
-        background: #ffffff;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.25);
-        border-radius: var(--border-radius);
-        transition: transform 0.2s;
-    }
- 
-    .toggle__input:checked~.toggle__fill {
-        background: #70ff69;
-    }
- 
-    .toggle__input:checked~.toggle__fill::after {
-        transform: translateX(var(--height));
-    }
-    </style>`;
+      <style>
+      .container {
+      background-color: rgb(57, 57, 62);
+      color: rgb(170, 170, 170);
+      border: 2px solid rgb(97, 97, 101);
+      border-radius: 12px;
+      width: 270px;
+      font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+      z-index: 5000;
+      position: fixed;
+
+  }
+
+  .item {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+  }
+
+  .item-wrapper {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      margin-left: 2px;
+      margin-right: 1rem;
+  }
+
+  .flex {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+  }
+  #header {
+      padding: 0 0 0 1rem;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      border-bottom: 1px solid rgb(97, 97, 101);
+  }
+
+  .module {
+      padding: 0 0 0 1rem;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      border-top: 1px solid rgb(97, 97, 101);
+      height: 50px;
+  }
+
+  .modules {
+      overflow-y: auto;
+      height: 300px;
+  }
+
+  .button {
+      outline: none;
+      border: none;
+      font-size: x-large;
+      background-color: rgb(40, 40, 43);
+      border: 1px solid rgb(97, 97, 101);
+      border-radius: 12px;
+
+  }
+
+  .button:hover {
+      background-color: rgb(57, 57, 62);
+  }
+
+  .button:active {
+      background-color: #ff6c69;
+  }
+
+
+  .module-container {
+      background-color: rgb(57, 57, 62);
+      color: rgb(170, 170, 170);
+      border: 1px solid rgb(97, 97, 101);
+      border-radius: 12px;
+      width: 200px;
+      font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+      position:fixed;
+      z-index: 5000;
+      display:none;
+  }
+
+  #module-header {
+      padding: 0 0 0 1rem;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      border-bottom: 1px solid rgb(97, 97, 101);
+  }
+
+
+  #module-header-simple {
+      padding: 0 0 0 1rem;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+  }
+
+  .flex {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+  }
+
+  .item {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+  }
+
+  .item-wrapper {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+  }
+
+  #textbox {
+      display: flex;
+      flex-direction: row;
+      align-content: center;
+      flex-wrap: wrap;
+      width: 100%;
+      border: 1px solid rgb(97, 97, 101);
+      border-radius: 12px;
+      border-radius: 5px;
+      min-height : 40px;
+  }
+
+  .module-button {
+      margin-left: 5px; border: 1px solid rgb(107, 107, 107);
+      border-radius: 5px;
+      color: rgb(150, 150, 150);
+      background-color: rgb(77, 77, 77);
+      outline: none;
+  }
+
+
+  .module-button:hover {
+      background-color: rgb(57, 57, 62);
+  }
+
+  .module-button:active {
+      background-color: #ff6c69;
+  }
+
+
+  .TagLabel {
+      font-size: 85%;
+      font-weight: 600;
+      display: inline-block;
+      padding: .1em .5em;
+      margin: .2em .1em;
+      border-radius: 4px;
+      background: #212121;
+      font-size: 14px;
+      color: #1a1a1a;
+      background-color: #ff6c69;
+      text-transform: none;
+  }
+
+  .TagLabel:hover {
+      background-color: #ff9491;
+  }
+
+  .TagsInput-selected {
+     margin: 3px;
+  }
+
+  .module-input {
+      background-color: rgb(57, 57, 62);
+      border: 1px solid rgb(107, 107, 107);
+      border-radius: 5px;
+      color: rgb(255, 255, 255);
+      resize: none;
+  }
+
+  .toggle {
+      margin-left: 15px;
+      margin-top: 15px;
+      --width: 40px;
+      --height: calc(var(--width) / 2);
+      --border-radius: calc(var(--height) / 2);
+
+      display: inline-block;
+      cursor: pointer;
+  }
+
+
+  .toggle__fill {
+      position: relative;
+      width: var(--width);
+      height: var(--height);
+      border-radius: var(--border-radius);
+      background: #ff6c69;
+      transition: background 0.2s;
+  }
+
+  .toggle__fill::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: var(--height);
+      width: var(--height);
+      background: #ffffff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.25);
+      border-radius: var(--border-radius);
+      transition: transform 0.2s;
+  }
+
+  .toggle__input:checked~.toggle__fill {
+      background: #70ff69;
+  }
+
+  .toggle__input:checked~.toggle__fill::after {
+      transform: translateX(var(--height));
+  }
+  </style>`;
 
     $(document.body).append(moduleListCSS);
   }
